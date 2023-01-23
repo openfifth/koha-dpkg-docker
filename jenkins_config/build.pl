@@ -28,7 +28,7 @@ run(qq{wget -O docker-compose.yml $docker_compose_yml}, { exit_on_error => 1 });
 
 docker_cleanup();
 
-run(qq{mkdir -p $KOHA_DEBS});
+run(qq{mkdir -p \$KOHA_DEBS});
 
 my $cmd = 'docker-compose -f docker-compose.yml pull';
 run($cmd, { exit_on_error => 1 });
