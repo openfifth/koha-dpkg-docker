@@ -5,7 +5,7 @@ use warnings;
 
 my $env_vars = {
     SYNC_REPO     => $ENV{SYNC_REPO} || '.',
-    DEBS_OUT     => $ENV{DEBS_OUT} || './debs',
+    DEBS_OUT      => $ENV{DEBS_OUT} || './debs',
     LOCAL_USER_ID => qx{id -u},
     KDD_IMAGE     => $ENV{KDD_IMAGE} || 'master',
     KDD_BRANCH    => $ENV{KDD_BRANCH} || 'master',
