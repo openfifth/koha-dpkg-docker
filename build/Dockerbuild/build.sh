@@ -1,17 +1,33 @@
 #!/usr/bin/env bash
 
-/update.sh
+# source env file
+. /.env
+
+## seed update.sh
+cat <<EOF | tee /update.sh >/dev/null
+#!/bin/sh
+    apt clean; apt update
+    apt upgrade -y
+EOF
+chmod +x /update.sh
+
+## cd to workdir, run update.sh
 cd /kohaclone
+/update.sh
 
-export PERL5LIB="/kohaclone:/kohaclone/lib"
-export DEB_BUILD_OPTIONS=nocheck
-export EMAIL="nobody@localhost.localnet"
-export VERSION="$(cat ./Koha.pm | grep "$VERSION = \"" | cut -b 13-20)"
-
+## run update.sh inside pbuilder env
 pbuilder --execute --save-after-exec -- /update.sh
 
-./debian/update-control
-git checkout -- debian/update-control
+## determine version
+if [[ -z "${DISTRIBUTION}" ]]; then
+	DISTRIBUTION="$(bash -c 'lsb_release -cs')"
+fi
+if [[ -z "${VERSION}" ]]; then
+	VERSION="$(cat ./Koha.pm | grep "VERSION = \"" | cut -b13-20)"
+fi
 
-./debian/build-git-snapshot -r /kohadebs -v ${VERSION} --noautoversion -d
+./debian/update-control
+./debian/build-git-snapshot -r /kohadebs -D ${DISTRIBUTION} -g modified -v ${VERSION} --noautoversion -d
+
+git checkout -- debian/control
 git checkout -- debian/changelog
