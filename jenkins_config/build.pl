@@ -5,7 +5,7 @@ use warnings;
 
 my $env_vars = {
     SYNC_REPO     => $ENV{SYNC_REPO} || '.',
-    KOHA_DEBS     => $ENV{KOHA_DEBS} || './debs',
+    DEBS_OUT     => $ENV{DEBS_OUT} || './debs',
     LOCAL_USER_ID => qx{id -u},
     KDD_IMAGE     => $ENV{KDD_IMAGE} || 'master',
     KDD_BRANCH    => $ENV{KDD_BRANCH} || 'master',
@@ -28,7 +28,7 @@ run(qq{wget -O docker-compose.yml $docker_compose_yml}, { exit_on_error => 1 });
 
 docker_cleanup();
 
-run(qq{mkdir -p \$KOHA_DEBS});
+run(qq{mkdir -p \$DEBS_OUT});
 
 my $cmd = 'docker-compose -f docker-compose.yml pull';
 run($cmd, { exit_on_error => 1 });
