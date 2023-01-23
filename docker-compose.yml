@@ -1,7 +1,7 @@
 version: '3'
 services:
     koha-debs:
-        image: ptfseurope/koha-debs:${BUILD_IMAGE}
+        image: ptfseurope/koha-debs:${KDD_IMAGE}
         privileged: true
         volumes:
             - ${SYNC_REPO}:/kohaclone
