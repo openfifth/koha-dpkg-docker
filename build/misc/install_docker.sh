@@ -65,6 +65,7 @@ echo "deb [arch=${DPKG_ARCH} signed-by=/usr/share/keyrings/docker.gpg] https://d
 ## install docker
 apt clean ; apt update
 apt install docker-ce docker-ce-cli containerd.io docker-compose-plugin -y
+apt install docker-compose -y
 
 
 ## add current user to docker group

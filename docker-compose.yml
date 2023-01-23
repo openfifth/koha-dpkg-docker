@@ -6,5 +6,5 @@ services:
         volumes:
             - ${SYNC_REPO}:/kohaclone
             - ${DEBS_OUT}:/kohadebs
-       env_file:
+        env_file:
             - .env
