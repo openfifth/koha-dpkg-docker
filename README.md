@@ -6,7 +6,7 @@ This is designed to run within Jenkins or GitLab CI/CD, as a quick, easy, and re
 You will need three things to build a Koha package:
 * a valid Koha repository (in this example, it will be at `/home/koha/kohaclone`)
 * a valid, empty, output directory (in this example, it will be at `/home/koha/kohadebs`)
-* a valid installation of Docker (please see the [Docker website](https://docs.docker.com/engine/install/) for instructions on how to do this)
+* a valid installation of Docker (please see the [Installing Docker correctly](https://gitlab.com/ptfs-europe/koha-debs-docker/-/wikis/Installing Docker correctly) article for instructions on how to do this)
 
 Make sure you have checked out the branch you would like. To do this (using 22.11 as an example):
 ```bash
