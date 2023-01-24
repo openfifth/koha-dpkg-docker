@@ -28,6 +28,7 @@ fi
 
 git clean -f
 
+./debian/update-control
 ./debian/build-git-snapshot -r /kohadebs -D ${DISTRIBUTION} -g modified -v ${VERSION} --noautoversion -d
 
 git checkout -- debian/control

@@ -12,7 +12,6 @@ RUN \
     apt install curl wget gnupg2 lsb-release -y ; \
     wget -qO - ${REPO}/gpg.asc | gpg --dearmor | tee /usr/share/keyrings/koha.gpg >/dev/null ; \
     echo deb [signed-by=/usr/share/keyrings/koha.gpg] ${REPO}/ ${SUITE} main | tee /etc/apt/sources.list.d/koha.list ; \
-    apt install koha-perldeps ; \
     apt clean ; apt update ; \
     apt-file update ; \
     pbuilder clean
