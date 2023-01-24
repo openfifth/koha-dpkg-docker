@@ -57,8 +57,8 @@ LSB_CODENAME="$(bash -c 'lsb_release -cs | tr [:upper:] [:lower:]')"
 ##
 ## add key to keychain & repo to apt lists
 mkdir -p /usr/share/keyrings
-curl -fsSL https://download.docker.com/linux/${LSB_ID}/gpg | sudo gpg --dearmor | tee /usr/share/keyrings/docker.gpg >/dev/null
-echo "deb [arch=${DPKG_ARCH} signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/${LSB_ID} ${LSB_CODENAME} stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+curl -fsSL https://download.docker.com/linux/${LSB_ID}/gpg | gpg --dearmor | tee /usr/share/keyrings/docker.gpg >/dev/null
+echo "deb [arch=${DPKG_ARCH} signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/${LSB_ID} ${LSB_CODENAME} stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 ##
 ##
