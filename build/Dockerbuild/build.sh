@@ -26,7 +26,8 @@ if [[ -z "${VERSION}" ]]; then
 	VERSION="$(cat ./Koha.pm | grep "VERSION = \"" | cut -b13-20)"
 fi
 
-./debian/update-control
+git clean -f
+
 ./debian/build-git-snapshot -r /kohadebs -D ${DISTRIBUTION} -g modified -v ${VERSION} --noautoversion -d
 
 git checkout -- debian/control
