@@ -40,7 +40,7 @@ echo -ne "Welcome!\nInstalling pbuilder and providing a base.tgz file to this di
 ##
 ##
 ## begin -- install deps
-rm -f /var/cache/pbuilder/bash.tgz
+rm -f /var/cache/pbuilder/base.tgz
 apt clean ; apt update
 apt upgrade -y
 
@@ -59,6 +59,7 @@ fi
 ## start pbuilder stuff -- create base
 pbuilder clean
 pbuilder create --distribution ${DISTRIBUTION} --mirror ${MIRROR}/ --debootstrapopts "--components=main" --debootstrapopts "--keyring=${KEYRING}"
+cp /var/cache/pbuilder/base.tgz /var/cache/pbuilder/base_unsoiled.tgz
 
 ## seed and execute additional deps
 cat <<EOF | tee /tmp/koha_pbuilder.sh >/dev/null
