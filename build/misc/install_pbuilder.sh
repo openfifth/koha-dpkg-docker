@@ -43,10 +43,7 @@ apt install devscripts pbuilder dh-make fakeroot bash-completion debian-archive-
 
 ## install debian archive keyring
 apt install debian-archive-keyring -y
-if [[ ! -f "${KEYRING}" ]]; then
-	echo -ne "! ${KEYRING} is missing. Please install it!\n"
-	exit 1
-fi
+
 
 ##
 ##

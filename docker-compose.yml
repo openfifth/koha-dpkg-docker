@@ -1,6 +1,6 @@
 version: '3'
 services:
-    koha-debs:
+    build:
         image: ptfseurope/koha-debs:${KDD_IMAGE}
         privileged: true
         volumes:
