@@ -14,10 +14,6 @@ while ( my ( $var, $value ) = each %$env_vars ) {
     $ENV{$var} = $value;
 }
 
-# Cleanup
-run(q{rm -rf cover_db});
-run(q{git clean -f});
-
 my $GITLAB_RAW_URL = "https://gitlab.com/ptfs-europe/koha-debs-docker/raw/" . $ENV{KDD_BRANCH};
 
 my $docker_compose_env = "$GITLAB_RAW_URL/build/Dockerbuild/docker.env";
@@ -30,8 +26,9 @@ docker_cleanup();
 
 run(qq{mkdir -p \$DEBS_OUT});
 
+# Pull images
 my $cmd = 'docker-compose -f docker-compose.yml pull';
-run($cmd, { exit_on_error => 1 });
+run($cmd, { exit_on_error => 1, use_pipe => 1 });
 
 # Run tests
 $cmd = 'docker-compose -f docker-compose.yml -p koha up --abort-on-container-exit --no-color --force-recreate';
