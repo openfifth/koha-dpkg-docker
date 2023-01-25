@@ -41,9 +41,6 @@ apt upgrade -y
 ## install pbuilder
 apt install devscripts pbuilder dh-make fakeroot bash-completion debian-archive-keyring -y
 
-## install debian archive keyring
-apt install debian-archive-keyring -y
-
 
 ##
 ##
