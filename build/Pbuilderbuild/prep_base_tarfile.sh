@@ -39,16 +39,7 @@ echo -ne "Welcome!\nInstalling pbuilder and providing a base.tgz file to this di
 
 ##
 ##
-## begin -- install deps
-rm -f /var/cache/pbuilder/base.tgz
-apt clean ; apt update
-apt upgrade -y
-
-## install pbuilder
-apt install devscripts pbuilder dh-make fakeroot bash-completion debian-archive-keyring -y
-
-## install debian archive keyring
-apt install debian-archive-keyring -y
+## check keyring is present
 if [[ ! -f "${KEYRING}" ]]; then
 	echo -ne "! ${KEYRING} is missing. Please install it!\n"
 	exit 1
