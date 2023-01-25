@@ -1,5 +1,8 @@
 #!/bin/bash -x
 
+## cd to kohaclone
+cd ${WORKSPACE}/kohaclone
+
 export SYNC_REPO="${WORKSPACE}/kohaclone"
 export DEBS_OUT="${WORKSPACE}/kohadebs"
 export KDD_IMAGE="master"
