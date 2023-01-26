@@ -10,10 +10,10 @@ cat <<EOF | tee /update.sh >/dev/null
     apt upgrade -y
 EOF
 chmod +x /update.sh
+/update.sh
 
 ## cd to workdir, run update.sh
 cd /kohaclone
-/update.sh
 
 ## run update.sh inside pbuilder env
 pbuilder --execute --save-after-exec -- /update.sh
@@ -27,6 +27,7 @@ if [[ -z "${VERSION}" ]]; then
 fi
 
 git clean -f
+git checkout -- .
 
 ./debian/update-control
 ./debian/build-git-snapshot -r /kohadebs -D ${DISTRIBUTION} -g modified -v ${VERSION} --noautoversion -d
