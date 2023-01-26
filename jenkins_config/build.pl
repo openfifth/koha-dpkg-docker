@@ -14,6 +14,8 @@ while ( my ( $var, $value ) = each %$env_vars ) {
     $ENV{$var} = $value;
 }
 
+run(q{git clean -f});
+
 my $GITLAB_RAW_URL = "https://gitlab.com/ptfs-europe/koha-debs-docker/raw/" . $ENV{KDD_BRANCH};
 
 my $docker_compose_env = "$GITLAB_RAW_URL/default.env";
