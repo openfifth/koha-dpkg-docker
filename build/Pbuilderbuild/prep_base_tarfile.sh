@@ -45,12 +45,18 @@ if [[ ! -f "${KEYRING}" ]]; then
 	exit 1
 fi
 
+
 ##
 ##
 ## start pbuilder stuff -- create base
 pbuilder clean
-pbuilder create --distribution ${DISTRIBUTION} --mirror ${MIRROR}/ --debootstrapopts "--components=main" --debootstrapopts "--keyring=${KEYRING}"
-cp /var/cache/pbuilder/base.tgz /var/cache/pbuilder/base_unsoiled.tgz
+if [[ ! -f "/var/cache/pbuilder/base_unsoiled.tgz" ]] ||  [[ ! -z "$(find /var/cache/pbuilder/base_unsoiled.tgz -mtime +1 -print)" ]]; then
+	rm -f /var/cache/pbuilder/base_unsoiled.tgz
+	pbuilder create --distribution ${DISTRIBUTION} --mirror ${MIRROR}/ --debootstrapopts "--components=main" --debootstrapopts "--keyring=${KEYRING}"
+	cp /var/cache/pbuilder/base.tgz /var/cache/pbuilder/base_unsoiled.tgz
+else
+	cp /var/cache/pbuilder/base_unsoiled.tgz /var/cache/pbuilder/base.tgz
+fi
 
 ## seed and execute additional deps
 cat <<EOF | tee /tmp/koha_pbuilder.sh >/dev/null
