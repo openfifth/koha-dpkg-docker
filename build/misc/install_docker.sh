@@ -68,6 +68,11 @@ apt install docker-ce docker-ce-cli containerd.io docker-compose-plugin -y
 apt install docker-compose -y
 
 
+## enable and run dockerd
+systemctl enable --now docker.service
+systemctl start docker.service
+
+
 ## add current user to docker group
 usermod -aG docker ${REAL_USER}
 
