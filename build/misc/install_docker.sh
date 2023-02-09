@@ -60,6 +60,7 @@ mkdir -p /usr/share/keyrings
 curl -fsSL https://download.docker.com/linux/${LSB_ID}/gpg | gpg --dearmor | tee /usr/share/keyrings/docker.gpg >/dev/null
 echo "deb [arch=${DPKG_ARCH} signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/${LSB_ID} ${LSB_CODENAME} stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 
+
 ##
 ##
 ## install docker
@@ -67,14 +68,13 @@ apt clean ; apt update
 apt install docker-ce docker-ce-cli containerd.io docker-compose-plugin -y
 apt install docker-compose -y
 
-
 ## enable and run dockerd
 systemctl enable --now docker.service
 systemctl start docker.service
 
-
 ## add current user to docker group
 usermod -aG docker ${REAL_USER}
+
 
 ##
 ##
