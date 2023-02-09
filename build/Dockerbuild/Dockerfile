@@ -1,4 +1,4 @@
-]FROM debian:bullseye
+FROM debian:bullseye
 WORKDIR /
 VOLUME ["/kohaclone", "/kohadebs"]
 COPY docker.env /.env
