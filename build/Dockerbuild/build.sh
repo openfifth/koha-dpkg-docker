@@ -16,7 +16,7 @@ chmod +x /update.sh
 cd /kohaclone
 
 ## run update.sh inside pbuilder env
-pbuilder --execute --save-after-exec -- /update.sh
+/usr/sbin/pbuilder --execute --save-after-exec -- /update.sh
 
 ## determine version
 if [[ -z "${DISTRIBUTION}" ]]; then
@@ -26,11 +26,16 @@ if [[ -z "${VERSION}" ]]; then
 	VERSION="$(cat ./Koha.pm | grep "VERSION = \"" | cut -b13-20)"
 fi
 
-git clean -f
-git checkout -- .
+## prep repo
+/usr/bin/git clean -f
+/usr/bin/git checkout -- .
 
+## begin process
 ./debian/update-control
-./debian/build-git-snapshot -r /kohadebs -D ${DISTRIBUTION} -g modified -v ${VERSION} --noautoversion -d
+/usr/bin/dch --force-distribution -D ${DISTRIBUTION} -v ${VERSION} "Building git snapshot."
+/usr/bin/git archive --format=tar --prefix="koha-${VERSION}/" HEAD | gzip -9 > ../koha_${VERSION}.orig.tar.gz
+/usr/bin/pdebuild -- --buildresult /kohadebs
 
-git checkout -- debian/control
-git checkout -- debian/changelog
+## tidy-up
+/usr/bin/git checkout -- debian/control
+/usr/bin/git checkout -- debian/changelog
