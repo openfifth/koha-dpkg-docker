@@ -1,4 +1,5 @@
-#!/usr/bin/env bash +x
+#!/usr/bin/env bash
+set +x
 
 # source env file
 . /.env
@@ -39,3 +40,6 @@ fi
 ## tidy-up
 /usr/bin/git checkout -- debian/control
 /usr/bin/git checkout -- debian/changelog
+
+set -x
+exit 0
