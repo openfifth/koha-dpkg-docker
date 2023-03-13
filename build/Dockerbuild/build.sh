@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash +x
 
 # source env file
 . /.env
@@ -34,7 +34,7 @@ fi
 ./debian/update-control
 /usr/bin/dch --force-distribution -D ${DISTRIBUTION} -v ${VERSION} "Building git snapshot."
 /usr/bin/git archive --format=tar --prefix="koha-${VERSION}/" HEAD | gzip -9 > ../koha_${VERSION}.orig.tar.gz
-/usr/bin/pdebuild -- --buildresult /kohadebs
+/usr/bin/pdebuild --buildresult /kohadebs
 
 ## tidy-up
 /usr/bin/git checkout -- debian/control
