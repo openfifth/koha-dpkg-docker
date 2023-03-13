@@ -50,12 +50,20 @@ fi
 ##
 ## start pbuilder stuff -- create base
 pbuilder clean
-if [[ ! -f "/var/cache/pbuilder/base_unsoiled.tgz" ]] ||  [[ ! -z "$(find /var/cache/pbuilder/base_unsoiled.tgz -mtime +1 -print)" ]]; then
-	rm -f /var/cache/pbuilder/base_unsoiled.tgz
+rm -f /var/cache/pbuilder/base.tgz
+
+## if there is a valid unsoiled file, keep it
+if [[ ! -f /var/cache/pbuilder/base_unsoiled.tgz ]]; then
 	pbuilder create --distribution ${DISTRIBUTION} --mirror ${MIRROR}/ --debootstrapopts "--components=main" --debootstrapopts "--keyring=${KEYRING}"
 	cp /var/cache/pbuilder/base.tgz /var/cache/pbuilder/base_unsoiled.tgz
 else
-	cp /var/cache/pbuilder/base_unsoiled.tgz /var/cache/pbuilder/base.tgz
+	if [[ ! -z "$(find /var/cache/pbuilder/base_unsoiled.tgz -mtime +1 -print 2>/dev/null)" ]]; then
+		rm -f /var/cache/pbuilder/base_unsoiled.tgz
+		pbuilder create --distribution ${DISTRIBUTION} --mirror ${MIRROR}/ --debootstrapopts "--components=main" --debootstrapopts "--keyring=${KEYRING}"
+		cp /var/cache/pbuilder/base.tgz /var/cache/pbuilder/base_unsoiled.tgz
+	else
+		cp /var/cache/pbuilder/base_unsoiled.tgz /var/cache/pbuilder/base.tgz
+	fi
 fi
 
 ## seed and execute additional deps
