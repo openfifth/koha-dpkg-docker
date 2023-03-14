@@ -1,7 +1,7 @@
 FROM debian:bullseye
 WORKDIR /
 VOLUME ["/kohaclone", "/kohadebs"]
-COPY docker.env /.env
+COPY build.env /.env
 RUN \
     . /.env ; \
     echo "deb http://deb.debian.org/debian bullseye-backports main" > /etc/apt/sources.list.d/backports.list ; \

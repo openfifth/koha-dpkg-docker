@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set +x
+set -x
 
 # source env file
 . /.env
@@ -33,13 +33,14 @@ fi
 
 ## begin process
 ./debian/update-control
-/usr/bin/dch --force-distribution -D ${DISTRIBUTION} -v ${VERSION} "Building git snapshot."
-/usr/bin/git archive --format=tar --prefix="koha-${VERSION}/" HEAD | gzip -9 > ../koha_${VERSION}.orig.tar.gz
-/usr/bin/pdebuild --buildresult /kohadebs
+/usr/bin/dch --force-distribution -D "${DISTRIBUTION}" -v "${VERSION}-1" "Building git snapshot."
+/usr/bin/dch -r "Building git snapshot."
+/usr/bin/git archive --format="tar" --prefix="koha-${VERSION}/" HEAD | gzip > ../koha_${VERSION}.orig.tar.gz
+/usr/bin/pdebuild -- --basetgz "/var/cache/pbuilder/base.tgz" --buildresult "/kohadebs"
 
 ## tidy-up
 /usr/bin/git checkout -- debian/control
 /usr/bin/git checkout -- debian/changelog
 
-set -x
+set +x
 exit 0

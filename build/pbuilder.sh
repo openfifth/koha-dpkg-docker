@@ -1,34 +1,21 @@
 #!/usr/bin/env bash
 set -x
 
-##
-##
-## check elevation
-if [[ "${EUID}" -ne 0 ]]; then
-	echo "Please run as root (or sudo)."
-	set +x ; exit 1 ; { set +x; } 2>/dev/null
-fi
-
-
-##
-##
-## script vars
+## vars
 SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)" # get current script dir portibly
-
-REAL_USER="$(id -un)" # fallback to root
 if [[ ${SUDO_USER} ]]; then
 	REAL_USER="${SUDO_USER}" # or use sudo user
+else
+	REAL_USER="$(id -un)" # fallback to root
 fi
 REAL_GROUP="$(id -gn ${REAL_USER})" # fallback to real_user group
-if [[ ${SUDO_GROUP} ]]; then
-	REAL_GROUP="${SUDO_GROUP}" # or use sudo group
-fi
-if [[ ! -f "${SCRIPT_DIR}/pbuilder.env" ]]; then
+if [[ ! -f "${SCRIPT_DIR}/build.env" ]]; then
 	echo -ne "! No env file present! Please create one. See the wiki for details\n"
 	exit 1
+else
+	. ${SCRIPT_DIR}/build.env
 fi
-. ${SCRIPT_DIR}/pbuilder.env
 
 
 ##
