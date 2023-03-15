@@ -57,6 +57,8 @@ cat <<EOF | tee /tmp/koha_pbuilder.sh >/dev/null
     echo deb [signed-by=/usr/share/keyrings/koha.gpg] ${REPO}/ ${SUITE} main | tee /etc/apt/sources.list.d/koha.list >/dev/null ; \
     apt clean ; apt update ; \
     apt install apt-file koha-perldeps -y ; \
+    apt clean ; apt update ; \
+    apt install npm yarn -y ; \
     apt-file update ; \
     apt clean ; apt update
 EOF
