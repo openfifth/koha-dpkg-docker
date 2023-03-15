@@ -17,7 +17,7 @@ chmod +x /tmp/update.sh
 cd /kohaclone
 
 ## run update.sh inside pbuilder env
-/usr/sbin/pbuilder --execute --save-after-exec -- /update.sh
+/usr/sbin/pbuilder --execute --save-after-exec -- /tmp/update.sh
 
 ## determine version
 if [[ -z "${DISTRIBUTION}" ]]; then
