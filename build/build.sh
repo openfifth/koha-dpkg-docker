@@ -5,13 +5,13 @@ set -x
 . /.env
 
 ## seed update.sh
-cat <<EOF | tee /update.sh >/dev/null
+cat <<EOF | tee /tmp/update.sh >/dev/null
 #!/bin/sh
     apt clean; apt update
     apt upgrade -y
 EOF
-chmod +x /update.sh
-/update.sh
+chmod +x /tmp/update.sh
+/tmp/update.sh
 
 ## cd to workdir, run update.sh
 cd /kohaclone
