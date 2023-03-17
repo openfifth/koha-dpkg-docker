@@ -3,6 +3,7 @@ WORKDIR /
 VOLUME ["/kohaclone", "/kohadebs"]
 COPY build.env /.env
 RUN \
+    set -x ; \
     . /.env ; \
     echo "deb http://deb.debian.org/debian bullseye-backports main" > /etc/apt/sources.list.d/backports.list ; \
     apt clean ; apt update ; apt upgrade -y ; \
@@ -25,7 +26,8 @@ RUN \
     yarn config set strict-ssl false -g ; \
     apt clean ; apt update ; apt upgrade -y ; \
     apt-file update ; \
-    pbuilder clean
+    pbuilder clean ; \
+    set +x
 COPY base.tgz /var/cache/pbuilder/
 COPY build.sh /
 CMD ["/bin/sh","-c","/build.sh"]

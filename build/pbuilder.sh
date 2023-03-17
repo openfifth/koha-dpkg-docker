@@ -40,27 +40,35 @@ pbuilder clean
 rm -f /var/cache/pbuilder/base.tgz
 
 ## if there is a valid unsoiled file, keep it
-if [[ -z "$(find /var/cache/pbuilder/base_unsoiled.tgz -mtime +1 -print 2>/dev/null)" ]]; then
-	rm -f /var/cache/pbuilder/base_unsoiled.tgz
-	pbuilder create --distribution ${DISTRIBUTION} --mirror ${MIRROR}/ --debootstrapopts "--components=main" --debootstrapopts "--keyring=${KEYRING}"
-	cp /var/cache/pbuilder/base.tgz /var/cache/pbuilder/base_unsoiled.tgz
+if [[ -z "$(find /var/cache/pbuilder/base_unsoiled_${DISTRIBUTION}.tgz -mtime -1 -print)" ]]; then
+	rm -f /var/cache/pbuilder/base_unsoiled_${DISTRIBUTION}.tgz
+	pbuilder create --distribution "${DISTRIBUTION}" --mirror "${MIRROR}/" --debootstrapopts "--components=main" --debootstrapopts "--keyring=${KEYRING}"
+	cp /var/cache/pbuilder/base.tgz /var/cache/pbuilder/base_unsoiled_${DISTRIBUTION}.tgz
 else
-	cp /var/cache/pbuilder/base_unsoiled.tgz /var/cache/pbuilder/base.tgz
+	cp /var/cache/pbuilder/base_unsoiled_${DISTRIBUTION}.tgz /var/cache/pbuilder/base.tgz
 fi
 
 ## seed and execute additional deps
 cat <<EOF | tee /tmp/koha_pbuilder.sh >/dev/null
 #!/usr/bin/env bash
     apt clean; apt update ; apt upgrade -y ; \
-    apt install wget gnupg2 -y ; \
+    apt install curl wget ca-certificates gnupg2 -y ; \
     wget -qO - ${REPO}/gpg.asc | gpg --dearmor | tee /usr/share/keyrings/koha.gpg >/dev/null ; \
-    echo deb [signed-by=/usr/share/keyrings/koha.gpg] ${REPO}/ ${SUITE} main | tee /etc/apt/sources.list.d/koha.list >/dev/null ; \
+    echo deb [signed-by=/usr/share/keyrings/koha.gpg] ${REPO}/ ${SUITE} main | tee /etc/apt/sources.list.d/koha.list ; \
+    wget -qO - https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor | tee /usr/share/keyrings/nodesource.gpg >/dev/null ; \
+    echo deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x/ bullseye main | tee /etc/apt/sources.list.d/nodesource.list ; \
     apt clean ; apt update ; \
-    apt install apt-file koha-perldeps docbook-xsl-ns -y ; \
+    apt install koha-perldeps docbook-xsl-ns apt-file -y ; \
     apt clean ; apt update ; \
-    apt install npm yarn -y ; \
-    apt-file update ; \
-    apt clean ; apt update
+    apt install nodejs -y ; \
+    npm set strict-ssl false -g ; \
+    npm install -g corepack@latest ; \
+    npm install -g gulp-cli@latest ; \
+    npm install -g webpack-cli@latest ; \
+    corepack enable ; \
+    yarn config set strict-ssl false -g ; \
+    apt clean ; apt update ; \
+    apt-file update
 EOF
 chmod +x /tmp/koha_pbuilder.sh
 
