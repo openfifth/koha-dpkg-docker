@@ -1,1 +1,3 @@
-*base.tgz
+node_modules/
+yarn.lock
+base.tgz
