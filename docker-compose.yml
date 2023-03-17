@@ -1,7 +1,7 @@
 version: '3'
 services:
     build:
-        image: ptfseurope/koha-debs:${KDD_IMAGE}
+        image: registry.gitlab.com/ptfs-europe/koha-dpkg-docker:${KDD_IMAGE}
         privileged: true
         volumes:
             - ${SYNC_REPO}:/kohaclone
