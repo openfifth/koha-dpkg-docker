@@ -51,24 +51,20 @@ fi
 ## seed and execute additional deps
 cat <<EOF | tee /tmp/koha_pbuilder.sh >/dev/null
 #!/usr/bin/env bash
+    set -x ; \
     apt clean; apt update ; apt upgrade -y ; \
     apt install curl wget ca-certificates gnupg2 -y ; \
     wget -qO - ${REPO}/gpg.asc | gpg --dearmor | tee /usr/share/keyrings/koha.gpg >/dev/null ; \
     echo deb [signed-by=/usr/share/keyrings/koha.gpg] ${REPO}/ ${SUITE} main | tee /etc/apt/sources.list.d/koha.list ; \
     wget -qO - https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor | tee /usr/share/keyrings/nodesource.gpg >/dev/null ; \
-    echo deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_18.x/ bullseye main | tee /etc/apt/sources.list.d/nodesource.list ; \
+    echo deb [signed-by=/usr/share/keyrings/nodesource.gpg] http://deb.nodesource.com/node_14.x/ bullseye main | tee /etc/apt/sources.list.d/nodesource.list ; \
+    wget -qO - https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor | tee /usr/share/keyrings/yarn.gpg >/dev/null ; \
+    echo deb [signed-by=/usr/share/keyrings/yarn.gpg] http://dl.yarnpkg.com/debian/ stable main | tee /etc/apt/sources.list.d/yarn.list ; \
     apt clean ; apt update ; \
     apt install koha-perldeps docbook-xsl-ns apt-file -y ; \
     apt clean ; apt update ; \
-    apt install nodejs -y ; \
-    npm set strict-ssl false -g ; \
-    npm install -g corepack@latest ; \
-    npm install -g gulp-cli@latest ; \
-    npm install -g webpack-cli@latest ; \
-    corepack enable ; \
-    yarn config set strict-ssl false -g ; \
-    apt clean ; apt update ; \
-    apt-file update
+    apt-file update ; \
+    set +x
 EOF
 chmod +x /tmp/koha_pbuilder.sh
 

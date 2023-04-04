@@ -36,12 +36,9 @@ fi
 /usr/bin/git add debian/control
 /usr/bin/git commit -m "LOCAL: Updated debian/control file: ${VERSION}-1"
 
-## build dry-run
-PERL_MM_USE_DEFAULT=1 /usr/bin/perl Makefile.PL
-make ; rm -rf ./blib
-/usr/bin/git add koha-tmpl/\*.css -f
-/usr/bin/git add koha-tmpl/\*.css -f
-/usr/bin/git add koha-tmpl/\*LICENSE* -f
+## prep css / js
+/usr/bin/perl build-resources.PL
+/usr/bin/git add koha-tmpl/\* -f
 /usr/bin/git commit -m "LOCAL: Updated js / css: ${VERSION}-1"
 
 ## build dpkg
