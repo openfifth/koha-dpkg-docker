@@ -4,6 +4,9 @@ set -x
 # source env file
 . /.env
 
+# vars
+REV="$(git rev-list --count HEAD)"
+
 ## seed update.sh
 cat <<EOF | tee /tmp/update.sh >/dev/null
 #!/bin/sh
@@ -34,15 +37,15 @@ fi
 ## prep control
 ./debian/update-control
 /usr/bin/git add debian/control
-/usr/bin/git commit -m "LOCAL: Updated debian/control file: ${VERSION}-1"
+/usr/bin/git commit -m "LOCAL: Updated debian/control file: ${VERSION}-${REV}"
 
 ## prep css / js
 /usr/bin/perl build-resources.PL
 /usr/bin/git add koha-tmpl/\* -f
-/usr/bin/git commit -m "LOCAL: Updated js / css: ${VERSION}-1"
+/usr/bin/git commit -m "LOCAL: Updated js / css: ${VERSION}-${REV}"
 
 ## build dpkg
-/usr/bin/dch --force-distribution -D "${DISTRIBUTION}" -v "${VERSION}-1" "Building git snapshot."
+/usr/bin/dch --force-distribution -D "${DISTRIBUTION}" -v "${VERSION}-${REV}" "Building git snapshot."
 /usr/bin/dch -r "Building git snapshot."
 /usr/bin/git archive --format="tar" --prefix="koha-${VERSION}/" HEAD | gzip > ../koha_${VERSION}.orig.tar.gz
 /usr/bin/pdebuild -- --basetgz "/var/cache/pbuilder/base.tgz" --buildresult "/kohadebs"
