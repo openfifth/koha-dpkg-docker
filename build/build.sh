@@ -4,9 +4,6 @@ set -x
 # source env file
 . /.env
 
-# vars
-REV="$(git rev-list --count HEAD)"
-
 ## seed update.sh
 cat <<EOF | tee /tmp/update.sh >/dev/null
 #!/bin/sh
@@ -28,6 +25,9 @@ if [[ -z "${DISTRIBUTION}" ]]; then
 fi
 if [[ -z "${VERSION}" ]]; then
 	VERSION="$(cat ./Koha.pm | grep "VERSION = \"" | cut -b13-20)"
+fi
+if [[ -z "${REV}" ]]; then
+	REV="$(git rev-list --count HEAD)"
 fi
 
 ## prep repo
