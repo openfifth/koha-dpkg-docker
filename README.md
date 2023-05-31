@@ -20,7 +20,7 @@ docker run \
     --privileged \
     --volume=/home/koha/kohaclone:/kohaclone \
     --volume=/home/koha/kohadebs:/kohadebs \
-    ptfseurope/koha-debs:master
+    ptfseurope/koha-dpkg-docker:master
 ```
 
 Remember to keep the Docker mountpoints (the directory after the colon) the same! When the process is complete, you should have a valid set of packages in the `kohadebs` directory.
