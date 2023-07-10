@@ -37,12 +37,12 @@ fi
 ## prep control
 ./debian/update-control
 /usr/bin/git add debian/control
-/usr/bin/git commit -m "LOCAL: Updated debian/control file: ${VERSION}-${REV}"
+/usr/bin/git commit --no-verify -m "LOCAL: Updated debian/control file: ${VERSION}-${REV}"
 
 ## prep css / js
 /usr/bin/perl build-resources.PL
 /usr/bin/git add koha-tmpl/\* -f
-/usr/bin/git commit -m "LOCAL: Updated js / css: ${VERSION}-${REV}"
+/usr/bin/git commit --no-verify -m "LOCAL: Updated js / css: ${VERSION}-${REV}"
 
 ## build dpkg
 /usr/bin/dch --force-distribution -D "${DISTRIBUTION}" -v "${VERSION}-${REV}" "Building git snapshot."
