@@ -27,7 +27,7 @@ if [[ -z "${VERSION}" ]]; then
 	VERSION="$(cat ./Koha.pm | grep "VERSION = \"" | cut -b13-20)"
 fi
 if [[ -z "${REV}" ]]; then
-	REV="$(git rev-list --count HEAD)"
+	REV="$(date +%s)"
 fi
 
 ## prep repo
