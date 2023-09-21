@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -x
 
 ##
 ##
@@ -29,7 +28,10 @@ fi
 ##
 ##
 ## bienvenido
-echo -ne "Welcome!\nInstalling pbuilder.\nFrom here, you may use the koha-debs-docker Dockerfile\nFor more info, see https://gitlab.com/ptfs-europe/koha-debs-docker/-/wikis/home\n"
+echo -ne "I: Welcome!\n"
+echo -ne "I: Installing pbuilder.\n"
+echo -ne "I: From here, you may use the koha-debs-docker Dockerfile\n"
+echo -ne "I: For more info, see https://gitlab.com/ptfs-europe/koha-debs-docker/-/wikis/home\n"
 
 
 ##
@@ -45,7 +47,5 @@ apt install devscripts pbuilder dh-make fakeroot bash-completion debian-archive-
 ##
 ##
 ## job done
-ls -lh ${SCRIPT_DIR}
 echo -ne "Done!\n"
-set +x
 exit 0

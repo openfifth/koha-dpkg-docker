@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -x
 
 ##
 ##
@@ -32,7 +31,10 @@ LSB_CODENAME=""
 ##
 ##
 ## bienvenido
-echo -ne "Welcome!\nInstalling Docker and adding current user to docker group.\nFrom here, you may use the koha-debs-docker Dockerfile\nFor more info, see https://gitlab.com/ptfs-europe/koha-debs-docker/-/wikis/home\n"
+echo -ne "I: Welcome!\n"
+echo -ne "I: Installing Docker and adding current user to docker group.\n"
+echo -ne "I: From here, you may use the koha-debs-docker Dockerfile\n"
+echo -ne "I: For more info, see https://gitlab.com/ptfs-europe/koha-debs-docker/-/wikis/home\n"
 
 
 ##
@@ -56,9 +58,9 @@ LSB_CODENAME="$(bash -c 'lsb_release -cs | tr [:upper:] [:lower:]')"
 ##
 ##
 ## add key to keychain & repo to apt lists
-mkdir -p /usr/share/keyrings
+mkdir -vp /usr/share/keyrings
 curl -fsSL https://download.docker.com/linux/${LSB_ID}/gpg | gpg --dearmor | tee /usr/share/keyrings/docker.gpg >/dev/null
-echo "deb [arch=${DPKG_ARCH} signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/${LSB_ID} ${LSB_CODENAME} stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+echo "deb [signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/${LSB_ID} ${LSB_CODENAME} stable" | tee /etc/apt/sources.list.d/docker.list
 
 
 ##
@@ -86,5 +88,4 @@ docker run hello-world
 ##
 ## job done
 echo -ne "Done!\n"
-set +x
 exit 0
