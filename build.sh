@@ -107,7 +107,9 @@ if [[ -z "${VERSION}" ]]; then
 	VERSION="$(cat ./Koha.pm | grep "VERSION = \"" | cut -b13-20)"
 fi
 if [[ -z "${REV}" ]]; then
-	REV="$(date +%s)"
+    CODE=$(/usr/bin/git rev-parse --abbrev-ref HEAD)
+    REV=$(cut -d . -f 3 <<< "$CODE")
+	REV+="$(date +%s)"
 fi
 
 ## prep repo
