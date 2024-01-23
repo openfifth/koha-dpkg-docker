@@ -119,6 +119,9 @@ export PERL5LIB="/kohaclone:/kohaclone/lib"
 export KOHA_CONF=""
 export KOHA_HOME="/kohaclone"
 
+## echo env
+printenv
+
 ## prep control
 ./debian/update-control
 /usr/bin/git add debian/control
