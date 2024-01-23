@@ -119,13 +119,14 @@ export PERL5LIB="/kohaclone:/kohaclone/lib"
 export KOHA_CONF=""
 export KOHA_HOME="/kohaclone"
 
-## echo env
-printenv
-
 ## prep control
 ./debian/update-control
 /usr/bin/git add debian/control
 /usr/bin/git commit --no-verify -m "LOCAL: Updated debian/control file: ${VERSION}-${REV}"
+
+## prep git
+git config --global user.email "root@localhost.localnet"
+git config --global user.name  "root"
 
 ## prep css / js
 /usr/bin/perl build-resources.PL
