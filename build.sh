@@ -14,6 +14,7 @@ if [[ ! -f "${SCRIPT_DIR}/.env" ]]; then
 	exit 1
 else
 	. ${SCRIPT_DIR}/.env
+	printenv
 fi
 
 
