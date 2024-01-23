@@ -114,6 +114,11 @@ fi
 /usr/bin/git clean -f
 /usr/bin/git checkout -- .
 
+## prep env
+export PERL5LIB="/kohaclone:/kohaclone/lib"
+export KOHA_CONF=""
+export KOHA_HOME="/kohaclone"
+
 ## prep control
 ./debian/update-control
 /usr/bin/git add debian/control
