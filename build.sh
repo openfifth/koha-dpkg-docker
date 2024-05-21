@@ -132,6 +132,7 @@ git config --global user.name  "root"
 ## prep css / js
 /usr/bin/perl build-resources.PL
 /usr/bin/git add koha-tmpl/\* -f
+/usr/bin/git add api\/* -f
 /usr/bin/git commit --no-verify -m "LOCAL: Updated js / css: ${VERSION}-${REV}"
 
 ## build dpkg
