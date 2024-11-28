@@ -144,10 +144,12 @@ git config --global user.name  "root"
 /usr/bin/git add debian/control
 /usr/bin/git commit --no-verify -m "LOCAL: Updated debian/control file: \${VERSION}-\${REV}"
 
-## prep css / js
+## prep css / js / po
 /usr/bin/perl build-resources.PL
-/usr/bin/git add koha-tmpl/\\* -f
+/usr/bin/git add koha-tmpl\\/* -f
 /usr/bin/git add api\\/* -f
+/usr/bin/git commit --no-verify -m "LOCAL: Updated js / css: \${VERSION}-\${REV}"
+/usr/bin/git add misc/translator/po\\/* -f
 /usr/bin/git commit --no-verify -m "LOCAL: Updated js / css: \${VERSION}-\${REV}"
 
 ## build dpkg
