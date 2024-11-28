@@ -54,27 +54,42 @@ echo -ne "I: Creating blank image\n"
 pbuilder create --distribution "${DISTRIBUTION}" --mirror "${MIRROR}/" --debootstrapopts "--components=main" --debootstrapopts "--keyring=${KEYRING}"
 
 ## seed and execute additional deps
-echo -ne "I: Seeding pbuilder script\n"
-cat <<EOF | tee /tmp/koha-dpkg-docker/pbuilder.sh
+echo -ne "I: Seeing apt control script\n"
+cat <<EOF | tee /tmp/koha-dpkg-docker/apt_control.sh
 #!/usr/bin/env bash
-  apt clean; apt update ; apt upgrade -y ; \
+  echo "" > /etc/apt/sources.list ; \
+  echo "deb ${MIRROR} ${DISTRIBUTION} main contrib non-free" > /etc/apt/sources.list.d/${FAMILY}.list ; \
+  echo "deb ${MIRROR} ${DISTRIBUTION}-updates main contrib non-free" >> /etc/apt/sources.list.d/${FAMILY}.list ; \
+  echo "deb ${MIRROR_SEC} ${DISTRIBUTION_SEC} main contrib non-free" >> /etc/apt/sources.list.d/${FAMILY_SEC}.list ; \
+  echo "deb ${MIRROR} ${DISTRIBUTION}-backports main contrib non-free" > /etc/apt/sources.list.d/backports.list ; \
+  apt clean ; apt update ; apt upgrade -y ; apt dist-upgrade -y \ ;
+  apt install apt-file -y ; \
+  apt clean ; apt update ; \
+  apt-file update
+EOF
+chmod -v 0755 /tmp/koha-dpkg-docker/apt_control.sh
+
+echo -ne "I: Seeding pbuilder script\n"
+cat <<EOF | tee /tmp/koha-dpkg-docker/pbuilder_control.sh
+#!/usr/bin/env bash
+  apt clean ; apt update ; \
   apt install curl wget ca-certificates gnupg2 -y ; \
   wget -qO - ${REPO}/gpg.asc | gpg --dearmor | tee /usr/share/keyrings/koha.gpg >/dev/null ; \
   echo "deb [signed-by=/usr/share/keyrings/koha.gpg] ${REPO}/ ${SUITE} main" | tee /etc/apt/sources.list.d/koha.list ; \
   wget -qO - https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor | tee /usr/share/keyrings/nodesource.gpg >/dev/null ; \
-  echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] http://deb.nodesource.com/node_14.x/ ${DISTRIBUTION} main" | tee /etc/apt/sources.list.d/nodesource.list ; \
-  wget -qO - https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor | tee /usr/share/keyrings/yarn.gpg >/dev/null ; \
-  echo "deb [signed-by=/usr/share/keyrings/yarn.gpg] http://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list ; \
+  echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] http://deb.nodesource.com/node_18.x/ ${DISTRIBUTION} main" | tee /etc/apt/sources.list.d/nodesource.list ; \
+  wget -qO - https://dl.yarnpkg.com/${FAMILY}/pubkey.gpg | gpg --dearmor | tee /usr/share/keyrings/yarn.gpg >/dev/null ; \
+  echo "deb [signed-by=/usr/share/keyrings/yarn.gpg] http://dl.yarnpkg.com/${FAMILY}/ stable main" | tee /etc/apt/sources.list.d/yarn.list ; \
   apt clean ; apt update ; \
-  apt install koha-perldeps docbook-xsl-ns apt-file -y ; \
-  apt clean ; apt update ; \
-  apt-file update 
+  apt install koha-perldeps docbook-xsl-ns -y
 EOF
-chmod -v 0755 /tmp/koha-dpkg-docker/pbuilder.sh
+chmod -v 0755 /tmp/koha-dpkg-docker/pbuilder_control.sh
 
 ## run seeded file
-echo "I: Running seed script atop pbuilder base.tgz\n"
-pbuilder --execute --save-after-exec -- /tmp/koha-dpkg-docker/pbuilder.sh
+echo -ne "I: Running apt_control seed script atop pbuilder\n"
+pbuilder --execute --save-after-exec -- /tmp/koha-dpkg-docker/apt_control.sh
+echo -ne "I: Running pbuilder_control seed script atop pbuilder\n"
+pbuilder --execute --save-after-exec -- /tmp/koha-dpkg-docker/pbuilder_control.sh
 mv -v /var/cache/pbuilder/base.tgz /tmp/koha-dpkg-docker/base.tgz
 
 
@@ -82,7 +97,7 @@ mv -v /var/cache/pbuilder/base.tgz /tmp/koha-dpkg-docker/base.tgz
 ##
 ## start dockerfile stuff -- create base
 echo -ne "I: Seeding build.sh for Docker image\n"
-cat <<\EOF | tee /tmp/koha-dpkg-docker/build.sh
+cat <<EOF | tee /tmp/koha-dpkg-docker/build.sh
 #!/usr/bin/env bash
 
 # source env file
@@ -96,19 +111,19 @@ apt upgrade -y
 cd /kohaclone
 
 ## run update.sh inside pbuilder env
-echo -ne '#!/usr/bin/env bash\n\napt clean ; apt update\napt upgrade -y\n' | tee /tmp/apt_upgrade.sh
+echo -ne '#!/usr/bin/env bash\\n\\napt clean ; apt update\napt upgrade -y\n' | tee /tmp/apt_upgrade.sh
 chmod -v 0755 /tmp/apt_upgrade.sh
 /usr/sbin/pbuilder --execute --save-after-exec -- /tmp/apt_upgrade.sh
 
 ## determine version
-if [[ -z "${DISTRIBUTION}" ]]; then
-	DISTRIBUTION="$(bash -c 'lsb_release -cs')"
+if [[ -z "\${DISTRIBUTION}" ]]; then
+	DISTRIBUTION="\$(bash -c 'lsb_release -cs')"
 fi
-if [[ -z "${VERSION}" ]]; then
-	VERSION="$(cat ./Koha.pm | grep "VERSION = \"" | cut -b13-20)"
+if [[ -z "\${VERSION}" ]]; then
+	VERSION="\$(cat ./Koha.pm | grep "VERSION = \"" | cut -b13-20)"
 fi
-if [[ -z "${REV}" ]]; then
-	REV="$(date +%s)"
+if [[ -z "\${REV}" ]]; then
+	REV="\$(date +%s)"
 fi
 
 ## prep repo
@@ -120,25 +135,25 @@ export PERL5LIB="/kohaclone:/kohaclone/lib"
 export KOHA_CONF=""
 export KOHA_HOME="/kohaclone"
 
-## prep control
-./debian/update-control
-/usr/bin/git add debian/control
-/usr/bin/git commit --no-verify -m "LOCAL: Updated debian/control file: ${VERSION}-${REV}"
-
 ## prep git
 git config --global user.email "root@localhost.localnet"
 git config --global user.name  "root"
 
+## prep control
+./debian/update-control
+/usr/bin/git add debian/control
+/usr/bin/git commit --no-verify -m "LOCAL: Updated debian/control file: \${VERSION}-\${REV}"
+
 ## prep css / js
 /usr/bin/perl build-resources.PL
-/usr/bin/git add koha-tmpl/\* -f
-/usr/bin/git add api\/* -f
-/usr/bin/git commit --no-verify -m "LOCAL: Updated js / css: ${VERSION}-${REV}"
+/usr/bin/git add koha-tmpl/\\* -f
+/usr/bin/git add api\\/* -f
+/usr/bin/git commit --no-verify -m "LOCAL: Updated js / css: \${VERSION}-\${REV}"
 
 ## build dpkg
-/usr/bin/dch --force-distribution -D "${DISTRIBUTION}" -v "${VERSION}-${REV}" "Building git snapshot."
+/usr/bin/dch --force-distribution -D "\${DISTRIBUTION}" -v "\${VERSION}-\${REV}" "Building git snapshot."
 /usr/bin/dch -r "Building git snapshot."
-/usr/bin/git archive --format="tar" --prefix="koha-${VERSION}/" HEAD | gzip > ../koha_${VERSION}.orig.tar.gz
+/usr/bin/git archive --format="tar" --prefix="koha-\${VERSION}/" HEAD | gzip > ../koha_\${VERSION}.orig.tar.gz
 /usr/bin/pdebuild -- --basetgz "/var/cache/pbuilder/base.tgz" --buildresult "/kohadebs"
 
 ## tidy-up
@@ -151,25 +166,25 @@ chmod -v 0755 /tmp/koha-dpkg-docker/build.sh
 
 ## prepare Dockerfile
 echo -ne "I: Seeding Dockerfile for image construction\n"
-cat <<\EOF | tee /tmp/koha-dpkg-docker/Dockerfile
-FROM debian:bookworm
+cat <<EOF | tee /tmp/koha-dpkg-docker/Dockerfile
+FROM ${FAMILY}:${DISTRIBUTION}
 WORKDIR /
 VOLUME ["/kohaclone", "/kohadebs"]
 COPY .env /.env
 RUN \
     . /.env ; \
-    echo "deb http://deb.debian.org/debian bookworm-backports main" > /etc/apt/sources.list.d/backports.list ; \
+    echo "deb ${MIRROR} ${DISTRIBUTION}-backports main" > /etc/apt/sources.list.d/backports.list ; \
     apt clean ; apt update ; apt upgrade -y ; \
     apt install curl wget gnupg2 ca-certificates -y ; \
     wget -qO - ${REPO}/gpg.asc | gpg --dearmor | tee /usr/share/keyrings/koha.gpg >/dev/null ; \
     echo "deb [signed-by=/usr/share/keyrings/koha.gpg] ${REPO}/ ${SUITE} main" | tee /etc/apt/sources.list.d/koha.list ; \
     wget -qO - https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor | tee /usr/share/keyrings/nodesource.gpg >/dev/null ; \
     echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] http://deb.nodesource.com/node_14.x/ bookworm main" | tee /etc/apt/sources.list.d/nodesource.list ; \
-    wget -qO - https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor | tee /usr/share/keyrings/yarn.gpg >/dev/null ; \
-    echo "deb [signed-by=/usr/share/keyrings/yarn.gpg] http://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list ; \
+    wget -qO - https://dl.yarnpkg.com/${FAMILY}/pubkey.gpg | gpg --dearmor | tee /usr/share/keyrings/yarn.gpg >/dev/null ; \
+    echo "deb [signed-by=/usr/share/keyrings/yarn.gpg] http://dl.yarnpkg.com/${FAMILY}/ stable main" | tee /etc/apt/sources.list.d/yarn.list ; \
     apt clean ; apt update ; apt upgrade -y ; \
     apt install build-essential git file -y ; \
-    apt install devscripts pbuilder dh-make fakeroot bash-completion apt-file debian-archive-keyring -y ; \
+    apt install devscripts pbuilder dh-make fakeroot bash-completion apt-file ${FAMILY}-archive-keyring -y ; \
     apt install nodejs yarn -y ; \
     apt install libmodern-perl-perl libmodule-cpanfile-perl libparallel-forkmanager-perl libsys-cpu-perl -y ; \
     git config --global --add safe.directory /kohaclone ; \
@@ -198,7 +213,8 @@ cat Dockerfile | docker build -t ${KDD_REGISTRY}:${KDD_BRANCH} -f - .
 echo -ne "I: Removing disused temp files\n"
 rm -vf /tmp/koha-dpkg-docker/.env
 rm -vf /tmp/koha-dpkg-docker/base.tgz
-rm -vf /tmp/koha-dpkg-docker/pbuilder.sh
+rm -vf /tmp/koha-dpkg-docker/apt_control.sh
+rm -vf /tmp/koha-dpkg-docker/pbuilder_control.sh
 rm -vf /tmp/koha-dpkg-docker/build.sh
 rm -vf /tmp/koha-dpkg-docker/Dockerfile
 rm -vrf /tmp/koha-dpkg-docker/
