@@ -34,7 +34,7 @@ LSB_CODENAME=""
 echo -ne "I: Welcome!\n"
 echo -ne "I: Installing Docker and adding current user to docker group.\n"
 echo -ne "I: From here, you may use the koha-debs-docker Dockerfile\n"
-echo -ne "I: For more info, see https://gitlab.com/ptfs-europe/koha-debs-docker/-/wikis/home\n"
+echo -ne "I: For more info, see https://gitlab.com/openfifth/koha-debs-docker/-/wikis/home\n"
 
 
 ##
