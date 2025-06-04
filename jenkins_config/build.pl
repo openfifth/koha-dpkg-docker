@@ -18,7 +18,7 @@ run(q{git clean -f});
 
 my $GITLAB_RAW_URL = "https://gitlab.com/openfifth/koha-debs-docker/raw/" . $ENV{KDD_BRANCH};
 
-my $docker_compose_env = "$GITLAB_RAW_URL/default.env";
+my $docker_compose_env = "$GITLAB_RAW_URL/defaults.env";
 run(qq{wget -O .env $docker_compose_env}, { exit_on_error => 1 });
 
 my $docker_compose_yml = "$GITLAB_RAW_URL/docker-compose.yml";
