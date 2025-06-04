@@ -207,7 +207,11 @@ EOF
 ## job run
 cd /tmp/koha-dpkg-docker/
 echo -ne "I: Building Docker image for k.d.d building"
-cat Dockerfile | docker build -t ${KDD_REGISTRY}:${KDD_BRANCH} -f - .
+cat Dockerfile | docker buildx build \
+  --platform linux/arm/v7,linux/arm64/v8,linux/amd64 \
+  --tag ${KDD_REGISTRY}:${KDD_BRANCH} \
+  --file - \
+  .
 
 ##
 ##
