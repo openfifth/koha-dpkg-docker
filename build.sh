@@ -3,18 +3,44 @@
 ## vars
 SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)" # get current script dir portibly
+
 if [[ ${SUDO_USER} ]]; then
 	REAL_USER="${SUDO_USER}" # or use sudo user
 else
 	REAL_USER="$(id -un)" # fallback to root
 fi
 REAL_GROUP="$(id -gn ${REAL_USER})" # fallback to real_user group
+
 if [[ ! -f "${SCRIPT_DIR}/.env" ]]; then
 	echo -ne "E: No env file present! Please create one. See the wiki for details\n"
 	exit 1
+fi
+
+KERNEL="$(uname -s)"
+if [[ "${KERNEL}" != "Linux" ]]; then
+	echo "E: Unsupported system kernel: ${KERNEL}"
+	exit 1
+fi
+
+ARCH="$(arch)"
+PLATFORM="linux/${ARCH}"
+if [[ "${ARCH}" == "x86_64" ]]; then
+	export ARCH="amd64"
+	export PLATFORM="linux/amd64"
+elif [[ "${ARCH}" == "aarch64" ]]; then
+	export ARCH="arm64v8"
+	export PLATFORM="linux/arm64/v8"
 else
-	. ${SCRIPT_DIR}/.env
-	printenv
+	echo "E: Unsupported CPU architecture: ${ARCH}"
+	exit 1
+fi
+
+. ${SCRIPT_DIR}/.env
+printenv
+
+if [[ "$(docker system info | grep 'io.containerd.snapshotter.v1')" == "" ]]; then
+	echo "E: Docker must be set to use containerd-snapshotter. Please see https://docs.docker.com/engine/storage/containerd/#enable-containerd-image-store-on-docker-engine"
+	exit 1
 fi
 
 
@@ -57,12 +83,13 @@ pbuilder create --distribution "${DISTRIBUTION}" --mirror "${MIRROR}/" --deboots
 echo -ne "I: Seeing apt control script\n"
 cat <<EOF | tee /tmp/koha-dpkg-docker/apt_control.sh
 #!/usr/bin/env bash
+  echo "I: Running $0"
   echo "" > /etc/apt/sources.list ; \
-  echo "deb ${MIRROR} ${DISTRIBUTION} main contrib non-free" > /etc/apt/sources.list.d/${FAMILY}.list ; \
-  echo "deb ${MIRROR} ${DISTRIBUTION}-updates main contrib non-free" >> /etc/apt/sources.list.d/${FAMILY}.list ; \
-  echo "deb ${MIRROR_SEC} ${DISTRIBUTION_SEC} main contrib non-free" >> /etc/apt/sources.list.d/${FAMILY_SEC}.list ; \
-  echo "deb ${MIRROR} ${DISTRIBUTION}-backports main contrib non-free" > /etc/apt/sources.list.d/backports.list ; \
-  apt clean ; apt update ; apt upgrade -y ; apt dist-upgrade -y \ ;
+  rm -fv /etc/apt/sources.list.d/* ; \
+  echo "deb ${MIRROR} ${DISTRIBUTION} main contrib non-free non-free-firmware" > /etc/apt/sources.list.d/${FAMILY}.list ; \
+  echo "deb ${MIRROR} ${DISTRIBUTION}-updates main contrib non-free non-free-firmware" >> /etc/apt/sources.list.d/${FAMILY}.list ; \
+  echo "deb ${MIRROR_SEC} ${DISTRIBUTION_SEC} main contrib non-free non-free-firmware" >> /etc/apt/sources.list.d/${FAMILY_SEC}.list ; \
+  apt clean ; apt update ; apt upgrade -y ; apt full-upgrade -y \ ;
   apt install apt-file -y ; \
   apt clean ; apt update ; \
   apt-file update
@@ -72,12 +99,13 @@ chmod -v 0755 /tmp/koha-dpkg-docker/apt_control.sh
 echo -ne "I: Seeding pbuilder script\n"
 cat <<EOF | tee /tmp/koha-dpkg-docker/pbuilder_control.sh
 #!/usr/bin/env bash
+  echo "I: Running $0"
   apt clean ; apt update ; \
-  apt install curl wget ca-certificates gnupg2 -y ; \
+  apt install curl wget ca-certificates gnupg -y ; \
   wget -qO - ${REPO}/gpg.asc | gpg --dearmor | tee /usr/share/keyrings/koha.gpg >/dev/null ; \
   echo "deb [signed-by=/usr/share/keyrings/koha.gpg] ${REPO}/ ${SUITE} main" | tee /etc/apt/sources.list.d/koha.list ; \
-  wget -qO - https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor | tee /usr/share/keyrings/nodesource.gpg >/dev/null ; \
-  echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] http://deb.nodesource.com/node_18.x noarch main" | tee /etc/apt/sources.list.d/nodesource.list ; \
+  wget -qO - https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor | tee /usr/share/keyrings/nodesource.gpg >/dev/null ; \
+  echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] http://deb.nodesource.com/node_18.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list ; \
   wget -qO - https://dl.yarnpkg.com/${FAMILY}/pubkey.gpg | gpg --dearmor | tee /usr/share/keyrings/yarn.gpg >/dev/null ; \
   echo "deb [signed-by=/usr/share/keyrings/yarn.gpg] http://dl.yarnpkg.com/${FAMILY}/ stable main" | tee /etc/apt/sources.list.d/yarn.list ; \
   apt clean ; apt update ; \
@@ -100,6 +128,8 @@ echo -ne "I: Seeding build.sh for Docker image\n"
 cat <<EOF | tee /tmp/koha-dpkg-docker/build.sh
 #!/usr/bin/env bash
 
+echo "I: Running $0"
+
 # source env file
 . /.env
 
@@ -111,7 +141,7 @@ apt upgrade -y
 cd /kohaclone
 
 ## run update.sh inside pbuilder env
-echo -ne '#!/usr/bin/env bash\\n\\napt clean ; apt update\napt upgrade -y\n' | tee /tmp/apt_upgrade.sh
+echo -ne '#!/usr/bin/env bash\\n\\napt clean ; apt update\napt upgrade -y\napt full-upgrade -y' | tee /tmp/apt_upgrade.sh
 chmod -v 0755 /tmp/apt_upgrade.sh
 /usr/sbin/pbuilder --execute --save-after-exec -- /tmp/apt_upgrade.sh
 
@@ -169,19 +199,24 @@ chmod -v 0755 /tmp/koha-dpkg-docker/build.sh
 ## prepare Dockerfile
 echo -ne "I: Seeding Dockerfile for image construction\n"
 cat <<EOF | tee /tmp/koha-dpkg-docker/Dockerfile
-FROM ${FAMILY}:${DISTRIBUTION}
+ARG ARCH=
+FROM ${ARCH}/${FAMILY}:${DISTRIBUTION}
 WORKDIR /
 VOLUME ["/kohaclone", "/kohadebs"]
 COPY .env /.env
 RUN \
+    echo "I: Running $0" ; \
     . /.env ; \
-    echo "deb ${MIRROR} ${DISTRIBUTION}-backports main" > /etc/apt/sources.list.d/backports.list ; \
-    apt clean ; apt update ; apt upgrade -y ; \
-    apt install curl wget gnupg2 ca-certificates -y ; \
+    rm -fv /etc/apt/sources.list.d/* ; \
+    echo "deb ${MIRROR} ${DISTRIBUTION} main contrib non-free non-free-firmware" > /etc/apt/sources.list.d/${FAMILY}.list ; \
+    echo "deb ${MIRROR} ${DISTRIBUTION}-updates main contrib non-free non-free-firmware" >> /etc/apt/sources.list.d/${FAMILY}.list ; \
+    echo "deb ${MIRROR_SEC} ${DISTRIBUTION_SEC} main contrib non-free non-free-firmware" >> /etc/apt/sources.list.d/${FAMILY_SEC}.list ; \
+    apt clean ; apt update ; apt upgrade -y ; apt full-upgrade -y ; \
+    apt install curl wget gnupg ca-certificates -y ; \
     wget -qO - ${REPO}/gpg.asc | gpg --dearmor | tee /usr/share/keyrings/koha.gpg >/dev/null ; \
     echo "deb [signed-by=/usr/share/keyrings/koha.gpg] ${REPO}/ ${SUITE} main" | tee /etc/apt/sources.list.d/koha.list ; \
-    wget -qO - https://deb.nodesource.com/gpgkey/nodesource.gpg.key | gpg --dearmor | tee /usr/share/keyrings/nodesource.gpg >/dev/null ; \
-    echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] http://deb.nodesource.com/node_14.x/ bookworm main" | tee /etc/apt/sources.list.d/nodesource.list ; \
+    wget -qO - https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor | tee /usr/share/keyrings/nodesource.gpg >/dev/null ; \
+    echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] http://deb.nodesource.com/node_18.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list ; \
     wget -qO - https://dl.yarnpkg.com/${FAMILY}/pubkey.gpg | gpg --dearmor | tee /usr/share/keyrings/yarn.gpg >/dev/null ; \
     echo "deb [signed-by=/usr/share/keyrings/yarn.gpg] http://dl.yarnpkg.com/${FAMILY}/ stable main" | tee /etc/apt/sources.list.d/yarn.list ; \
     apt clean ; apt update ; apt upgrade -y ; \
@@ -208,8 +243,10 @@ EOF
 cd /tmp/koha-dpkg-docker/
 echo -ne "I: Building Docker image for k.d.d building"
 cat Dockerfile | docker buildx build \
-  --platform linux/arm/v7,linux/arm64/v8,linux/amd64 \
-  --tag ${KDD_REGISTRY}:${KDD_BRANCH} \
+  --push \
+  --build-arg ARCH=${ARCH} \
+  --platform ${PLATFORM} \
+  --tag ${KDD_REGISTRY}:${KDD_BRANCH}-${ARCH} \
   --file - \
   .
 
