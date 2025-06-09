@@ -106,8 +106,10 @@ cat <<EOF | tee /tmp/koha-dpkg-docker/pbuilder_control.sh
   echo "deb [signed-by=/usr/share/keyrings/koha.gpg] ${REPO}/ ${SUITE} main" | tee /etc/apt/sources.list.d/koha.list ; \
   wget -qO - https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor | tee /usr/share/keyrings/nodesource.gpg >/dev/null ; \
   echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] http://deb.nodesource.com/node_18.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list ; \
+  echo "Package: nodejs\nPin: version 18.*\nPin-Priority: 999" | tee /etc/apt/preferences.d/nodejs ; \
   wget -qO - https://dl.yarnpkg.com/${FAMILY}/pubkey.gpg | gpg --dearmor | tee /usr/share/keyrings/yarn.gpg >/dev/null ; \
   echo "deb [signed-by=/usr/share/keyrings/yarn.gpg] http://dl.yarnpkg.com/${FAMILY}/ stable main" | tee /etc/apt/sources.list.d/yarn.list ; \
+  echo "Package: yarn\nPin: version 1.*\nPin-Priority: 999" | tee /etc/apt/preferences.d/yarn ; \
   apt clean ; apt update ; \
   apt install koha-perldeps docbook-xsl-ns -y
 EOF
@@ -178,7 +180,6 @@ git config --global user.name  "root"
 /usr/bin/perl build-resources.PL
 /usr/bin/git add koha-tmpl\\/* -f
 /usr/bin/git add api\\/* -f
-/usr/bin/git commit --no-verify -m "LOCAL: Updated js / css: \${VERSION}-\${REV}"
 /usr/bin/git add misc/translator/po\\/* -f
 /usr/bin/git commit --no-verify -m "LOCAL: Updated js / css: \${VERSION}-\${REV}"
 
@@ -217,8 +218,10 @@ RUN \
     echo "deb [signed-by=/usr/share/keyrings/koha.gpg] ${REPO}/ ${SUITE} main" | tee /etc/apt/sources.list.d/koha.list ; \
     wget -qO - https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor | tee /usr/share/keyrings/nodesource.gpg >/dev/null ; \
     echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] http://deb.nodesource.com/node_18.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list ; \
+    echo "Package: nodejs\nPin: version 18.*\nPin-Priority: 999" | tee /etc/apt/preferences.d/nodejs ; \
     wget -qO - https://dl.yarnpkg.com/${FAMILY}/pubkey.gpg | gpg --dearmor | tee /usr/share/keyrings/yarn.gpg >/dev/null ; \
     echo "deb [signed-by=/usr/share/keyrings/yarn.gpg] http://dl.yarnpkg.com/${FAMILY}/ stable main" | tee /etc/apt/sources.list.d/yarn.list ; \
+    echo "Package: yarn\nPin: version 1.*\nPin-Priority: 999" | tee /etc/apt/preferences.d/yarn ; \
     apt clean ; apt update ; apt upgrade -y ; \
     apt install build-essential git file -y ; \
     apt install devscripts pbuilder dh-make fakeroot bash-completion apt-file ${FAMILY}-archive-keyring -y ; \
