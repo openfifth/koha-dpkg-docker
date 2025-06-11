@@ -148,15 +148,40 @@ chmod -v 0755 /tmp/apt_upgrade.sh
 /usr/sbin/pbuilder --execute --save-after-exec -- /tmp/apt_upgrade.sh
 
 ## determine version
-if [[ -z "\${DISTRIBUTION}" ]]; then
-	DISTRIBUTION="\$(bash -c 'lsb_release -cs')"
-fi
+EPOCH="\$(date +%s)"
+TIMESTAMP="\$(date -d @\${EPOCH} -Iseconds)"
 if [[ -z "\${VERSION}" ]]; then
 	VERSION="\$(cat ./Koha.pm | grep "VERSION = \"" | cut -b13-20)"
 fi
 if [[ -z "\${REV}" ]]; then
-	REV="\$(date +%s)"
+	REV="\${EPOCH}"
 fi
+if [[ -z "\${DISTRIBUTION}" ]]; then
+	DISTRIBUTION="\$(bash -c 'lsb_release -cs')"
+fi
+if [[ -z "\${ORIGIN}" ]]; then
+	ORIGIN="PTFS Europe"
+fi
+GIT_BRANCH="\$(git rev-parse --abbrev-ref HEAD)"
+if [[ -z "\${SUITE}" ]]; then
+	SUITE="\${GIT_BRANCH}"
+fi
+if [[ -z "\${ARCHIVE}" ]]; then
+	ARCHIVE="\${GIT_BRANCH}"
+fi
+if [[ -z "\${LABEL}" ]]; then
+	LABEL="Koha \${SUITE}"
+fi
+if [[ -z "\${PKG_ARCH}" ]]; then
+	PKG_ARCH="all"
+fi
+PKG_VERSION="\${VERSION}-\${REV}"
+
+## prep koha-manifest.json
+MY_TMP=\$(mktemp)
+echo "{\"timestamp\":\"\${TIMESTAMP}\",\"origin\":\"\${ORIGIN}\",\"label\":\"\${LABEL}\",\"archive\":\"\${ARCHIVE}\",\"suite\":\"\${SUITE}\",\"package-arch\":\"\${PKG_ARCH}\",\"package-version\":\"\${PKG_VERSION}\",\"artefacts\":[\${ARTEFACTS}]}" | \
+  jq '.' | \
+  tee "\${MY_TMP}"
 
 ## prep repo
 /usr/bin/git clean -f
@@ -174,7 +199,7 @@ git config --global user.name  "root"
 ## prep control
 ./debian/update-control
 /usr/bin/git add debian/control
-/usr/bin/git commit --no-verify -m "LOCAL: Updated debian/control file: \${VERSION}-\${REV}"
+/usr/bin/git commit --no-verify -m "LOCAL: Updated debian/control file: \${PKG_VERSION}"
 
 ## prep css / js / po
 /usr/bin/perl build-resources.PL
@@ -192,6 +217,17 @@ git config --global user.name  "root"
 ## tidy-up
 /usr/bin/git clean -f
 /usr/bin/git checkout -- .
+
+## populate artefacts
+for FILENAME in /kohadebs/*.deb; do
+	FILENAME=\$(basename "\${FILENAME}")
+	cat \${MY_TMP} | \
+	  jq --arg filename "\$FILENAME" '.artefacts[.artefacts| length] |= . + \$filename' | \
+	  tee \${MY_TMP}
+done
+
+## mv tmp manifest to dest
+mv -v "\${MY_TMP}" "/kohadebs/koha-debs-manifest.json"
 
 exit 0
 EOF
@@ -227,6 +263,7 @@ RUN \
     apt install devscripts pbuilder dh-make fakeroot bash-completion apt-file ${FAMILY}-archive-keyring -y ; \
     apt install nodejs yarn -y ; \
     apt install libmodern-perl-perl libmodule-cpanfile-perl libparallel-forkmanager-perl libsys-cpu-perl -y ; \
+    apt install jq -y ; \
     git config --global --add safe.directory /kohaclone ; \
     npm set strict-ssl false -g ; \
     npm install -g gulp-cli@latest ; \
