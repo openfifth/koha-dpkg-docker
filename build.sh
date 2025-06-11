@@ -15,6 +15,8 @@ if [[ ! -f "${SCRIPT_DIR}/.env" ]]; then
 	echo -ne "E: No env file present! Please create one. See the wiki for details\n"
 	exit 1
 fi
+. ${SCRIPT_DIR}/.env
+printenv
 
 KERNEL="$(uname -s)"
 if [[ "${KERNEL}" != "Linux" ]]; then
@@ -34,9 +36,6 @@ else
 	echo "E: Unsupported CPU architecture: ${ARCH}"
 	exit 1
 fi
-
-. ${SCRIPT_DIR}/.env
-printenv
 
 if [[ "$(docker system info | grep 'io.containerd.snapshotter.v1')" == "" ]]; then
 	echo "E: Docker must be set to use containerd-snapshotter. Please see https://docs.docker.com/engine/storage/containerd/#enable-containerd-image-store-on-docker-engine"
@@ -64,10 +63,9 @@ fi
 ##
 ##
 ## prep env
-echo -ne "I: Copying .env file to temp\n"
+echo -ne "I: Creating temp directory\n"
 mkdir -vp /tmp/koha-dpkg-docker
-cd /tmp/koha-dpkg-docker
-cp -v ${SCRIPT_DIR}/.env /tmp/koha-dpkg-docker/.env
+cd /tmp/koha-dpkg-docker && pwd
 
 
 ##
@@ -75,6 +73,7 @@ cp -v ${SCRIPT_DIR}/.env /tmp/koha-dpkg-docker/.env
 ## start pbuilder stuff -- create base
 echo -ne "I: Cleaning pbuilder\n"
 pbuilder clean
+rm -vf /var/cache/pbuilder/base.tgz.tmp
 rm -vf /var/cache/pbuilder/base.tgz
 echo -ne "I: Creating blank image\n"
 pbuilder create --distribution "${DISTRIBUTION}" --mirror "${MIRROR}/" --debootstrapopts "--components=main" --debootstrapopts "--keyring=${KEYRING}"
@@ -132,9 +131,6 @@ cat <<EOF | tee /tmp/koha-dpkg-docker/build.sh
 
 echo "I: Running $0"
 
-# source env file
-. /.env
-
 ## update now
 apt clean; apt update
 apt upgrade -y
@@ -159,29 +155,24 @@ fi
 if [[ -z "\${DISTRIBUTION}" ]]; then
 	DISTRIBUTION="\$(bash -c 'lsb_release -cs')"
 fi
-if [[ -z "\${ORIGIN}" ]]; then
-	ORIGIN="PTFS Europe"
-fi
-GIT_BRANCH="\$(git rev-parse --abbrev-ref HEAD)"
-if [[ -z "\${SUITE}" ]]; then
-	SUITE="\${GIT_BRANCH}"
-fi
-if [[ -z "\${ARCHIVE}" ]]; then
-	ARCHIVE="\${GIT_BRANCH}"
-fi
-if [[ -z "\${LABEL}" ]]; then
-	LABEL="Koha \${SUITE}"
-fi
 if [[ -z "\${PKG_ARCH}" ]]; then
 	PKG_ARCH="all"
 fi
 PKG_VERSION="\${VERSION}-\${REV}"
 
 ## prep koha-manifest.json
-MY_TMP=\$(mktemp)
-echo "{\"timestamp\":\"\${TIMESTAMP}\",\"origin\":\"\${ORIGIN}\",\"label\":\"\${LABEL}\",\"archive\":\"\${ARCHIVE}\",\"suite\":\"\${SUITE}\",\"package-arch\":\"\${PKG_ARCH}\",\"package-version\":\"\${PKG_VERSION}\",\"artefacts\":[\${ARTEFACTS}]}" | \
-  jq '.' | \
-  tee "\${MY_TMP}"
+GIT_BRANCH="\$(git rev-parse --abbrev-ref HEAD)"
+if [[ -z "\${GIT_ORIGIN}" ]]; then
+	GIT_ORIGIN="PTFS Europe"
+fi
+if [[ -z "\${GIT_LABEL_PREFIX}" ]]; then
+  GIT_LABEL_PREFIX="Koha"
+fi
+GIT_SUITE="\${GIT_BRANCH}"
+GIT_ARCHIVE="\${GIT_BRANCH}"
+GIT_LABEL="\${GIT_LABEL_PREFIX} \${GIT_SUITE}"
+MANIFEST="{\"timestamp\":\"\${TIMESTAMP}\",\"origin\":\"\${GIT_ORIGIN}\",\"label\":\"\${GIT_LABEL}\",\"archive\":\"\${GIT_ARCHIVE}\",\"suite\":\"\${GIT_SUITE}\",\"package-arch\":\"\${PKG_ARCH}\",\"package-version\":\"\${PKG_VERSION}\",\"artefacts\":[\${ARTEFACTS}]}"
+MANIFEST="\$(echo "\${MANIFEST}" | jq '.')"
 
 ## prep repo
 /usr/bin/git clean -f
@@ -206,13 +197,13 @@ git config --global user.name  "root"
 /usr/bin/git add koha-tmpl\\/* -f
 /usr/bin/git add api\\/* -f
 /usr/bin/git add misc/translator/po\\/* -f
-/usr/bin/git commit --no-verify -m "LOCAL: Updated js / css: \${VERSION}-\${REV}"
+/usr/bin/git commit --no-verify -m "LOCAL: Updated js / css: \${PKG_VERSION}"
 
 ## build dpkg
-/usr/bin/dch --force-distribution -D "\${DISTRIBUTION}" -v "\${VERSION}-\${REV}" "Building git snapshot."
-/usr/bin/dch -r "Building git snapshot."
-/usr/bin/git archive --format="tar" --prefix="koha-\${VERSION}/" HEAD | gzip > ../koha_\${VERSION}.orig.tar.gz
-/usr/bin/pdebuild -- --basetgz "/var/cache/pbuilder/base.tgz" --buildresult "/kohadebs"
+/usr/bin/dch --force-distribution -D "\${DISTRIBUTION}" -v "\${PKG_VERSION}" "Building git snapshot." || exit 1
+/usr/bin/dch -r "Building git snapshot." || exit 1
+/usr/bin/git archive --format="tar" --prefix="koha-\${VERSION}/" HEAD | gzip > ../koha_\${VERSION}.orig.tar.gz || exit 1
+/usr/bin/pdebuild -- --basetgz "/var/cache/pbuilder/base.tgz" --buildresult "/kohadebs" || exit 1
 
 ## tidy-up
 /usr/bin/git clean -f
@@ -220,14 +211,12 @@ git config --global user.name  "root"
 
 ## populate artefacts
 for FILENAME in /kohadebs/*.deb; do
-	FILENAME=\$(basename "\${FILENAME}")
-	cat \${MY_TMP} | \
-	  jq --arg filename "\$FILENAME" '.artefacts[.artefacts| length] |= . + \$filename' | \
-	  tee \${MY_TMP}
+	FILENAME="\$(basename "\${FILENAME}")"
+	MANIFEST="\$(echo "\${MANIFEST}" | jq --arg filename "\$FILENAME" '.artefacts += [\$filename]')"
 done
 
 ## mv tmp manifest to dest
-mv -v "\${MY_TMP}" "/kohadebs/koha-debs-manifest.json"
+echo "\${MANIFEST}" | tee "/kohadebs/koha-debs-manifest.json"
 
 exit 0
 EOF
@@ -238,12 +227,25 @@ echo -ne "I: Seeding Dockerfile for image construction\n"
 cat <<EOF | tee /tmp/koha-dpkg-docker/Dockerfile
 ARG ARCH=
 FROM ${ARCH}/${FAMILY}:${DISTRIBUTION}
+ENV BRANCH=${BRANCH}
+ENV KDD_BRANCH=${BRANCH}
+ENV KDD_REGISTRY=${KDD_REGISTRY}
+ENV FAMILY=${FAMILY}
+ENV FAMILY_SEC=${FAMILY_SEC}
+ENV MIRROR=${MIRROR}
+ENV MIRROR_SEC=${MIRROR_SEC}
+ENV DISTRIBUTION=${DISTRIBUTION}
+ENV DISTRIBUTION_SEC=${DISTRIBUTION-SEC}
+ENV KEYRING=${KEYRING}
+ENV SUITE=${SUITE}
+ENV REPO=${REPO}
+ENV DEBIAN_FRONTEND=${DEBIAN_FRONTEND}
+ENV EMAIL=${EMAIL}
+ENV DEB_BUILD_OPTIONS=${DEB_BUILD_OPTIONS}
 WORKDIR /
 VOLUME ["/kohaclone", "/kohadebs"]
-COPY .env /.env
 RUN \
     echo "I: Running $0" ; \
-    . /.env ; \
     rm -fv /etc/apt/sources.list.d/* ; \
     echo "deb ${MIRROR} ${DISTRIBUTION} main contrib non-free non-free-firmware" > /etc/apt/sources.list.d/${FAMILY}.list ; \
     echo "deb ${MIRROR} ${DISTRIBUTION}-updates main contrib non-free non-free-firmware" >> /etc/apt/sources.list.d/${FAMILY}.list ; \
@@ -294,7 +296,6 @@ cat Dockerfile | docker buildx build \
 ##
 ## job done
 echo -ne "I: Removing disused temp files\n"
-rm -vf /tmp/koha-dpkg-docker/.env
 rm -vf /tmp/koha-dpkg-docker/base.tgz
 rm -vf /tmp/koha-dpkg-docker/apt_control.sh
 rm -vf /tmp/koha-dpkg-docker/pbuilder_control.sh
