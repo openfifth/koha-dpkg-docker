@@ -104,8 +104,8 @@ cat <<EOF | tee /tmp/koha-dpkg-docker/pbuilder_control.sh
   wget -qO - ${REPO}/gpg.asc | gpg --dearmor | tee /usr/share/keyrings/koha.gpg >/dev/null ; \
   echo "deb [signed-by=/usr/share/keyrings/koha.gpg] ${REPO}/ ${SUITE} main" | tee /etc/apt/sources.list.d/koha.list ; \
   wget -qO - https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor | tee /usr/share/keyrings/nodesource.gpg >/dev/null ; \
-  echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] http://deb.nodesource.com/node_18.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list ; \
-  echo "Package: nodejs\nPin: version 18.*\nPin-Priority: 999" | tee /etc/apt/preferences.d/nodejs ; \
+  echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] http://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list ; \
+  echo "Package: nodejs\nPin: version 20.*\nPin-Priority: 999" | tee /etc/apt/preferences.d/nodejs ; \
   wget -qO - https://dl.yarnpkg.com/${FAMILY}/pubkey.gpg | gpg --dearmor | tee /usr/share/keyrings/yarn.gpg >/dev/null ; \
   echo "deb [signed-by=/usr/share/keyrings/yarn.gpg] http://dl.yarnpkg.com/${FAMILY}/ stable main" | tee /etc/apt/sources.list.d/yarn.list ; \
   echo "Package: yarn\nPin: version 1.*\nPin-Priority: 999" | tee /etc/apt/preferences.d/yarn ; \
@@ -255,8 +255,8 @@ RUN \
     wget -qO - ${REPO}/gpg.asc | gpg --dearmor | tee /usr/share/keyrings/koha.gpg >/dev/null ; \
     echo "deb [signed-by=/usr/share/keyrings/koha.gpg] ${REPO}/ ${SUITE} main" | tee /etc/apt/sources.list.d/koha.list ; \
     wget -qO - https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor | tee /usr/share/keyrings/nodesource.gpg >/dev/null ; \
-    echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] http://deb.nodesource.com/node_18.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list ; \
-    echo "Package: nodejs\nPin: version 18.*\nPin-Priority: 999" | tee /etc/apt/preferences.d/nodejs ; \
+    echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] http://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list ; \
+    echo "Package: nodejs\nPin: version 20.*\nPin-Priority: 999" | tee /etc/apt/preferences.d/nodejs ; \
     wget -qO - https://dl.yarnpkg.com/${FAMILY}/pubkey.gpg | gpg --dearmor | tee /usr/share/keyrings/yarn.gpg >/dev/null ; \
     echo "deb [signed-by=/usr/share/keyrings/yarn.gpg] http://dl.yarnpkg.com/${FAMILY}/ stable main" | tee /etc/apt/sources.list.d/yarn.list ; \
     echo "Package: yarn\nPin: version 1.*\nPin-Priority: 999" | tee /etc/apt/preferences.d/yarn ; \
@@ -272,6 +272,7 @@ RUN \
     yarn config set strict-ssl false -g ; \
     apt clean ; apt update ; apt upgrade -y ; \
     apt-file update ; \
+    yarn cache clean ; \
     pbuilder clean
 COPY base.tgz /var/cache/pbuilder/
 COPY build.sh /
