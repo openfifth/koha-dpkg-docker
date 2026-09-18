@@ -202,6 +202,7 @@ rm -rfv blib/ Makefile MYMETA.yml MYMETA.json
 
 ## ingest variously build files
 /usr/bin/git add -f api\\/*
+/usr/bin/git add -f docs\\/*
 /usr/bin/git add -f koha-tmpl\\/*
 /usr/bin/git add -f t\\/*
 /usr/bin/git commit --no-verify -m "LOCAL: Updated js / css: \${VERSION}"
