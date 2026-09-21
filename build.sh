@@ -200,6 +200,17 @@ cat .gitignore | /usr/bin/xargs rm -rvf {} \\;
 /usr/bin/make all
 rm -rfv blib/ Makefile MYMETA.yml MYMETA.json
 
+## stamp the build-commit placeholder with real content before it's committed.
+## a plain git add/commit never expands the export-subst placeholder that
+## \`git archive\` (below) does, so leaving it unstamped here means the orig
+## tarball and the /kohaclone working copy disagree and dpkg-source aborts
+## with "unexpected upstream changes".
+if [[ -f docs/build-commit.txt ]]; then
+    BUILD_COMMIT_HASH="\$(git rev-parse HEAD)"
+    BUILD_COMMIT_DATE="\$(git log -1 --format=%cI HEAD)"
+    echo "\${BUILD_COMMIT_HASH} \${BUILD_COMMIT_DATE}" > docs/build-commit.txt
+fi
+
 ## ingest variously build files
 /usr/bin/git add -f api\\/*
 /usr/bin/git add -f docs\\/*
