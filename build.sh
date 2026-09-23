@@ -152,8 +152,8 @@ if [[ -z "\${RELEASE}" ]]; then
     RELEASE="\$(cat ./Koha.pm | grep "VERSION = \"" | cut -b13-20)"
 fi
 GIT_HASH="\$(git rev-parse --short HEAD)"
-if [[ -z "\${REV}" ]]; then
-    REV="1"
+if [[ -z "\${INCR}" ]]; then
+    INCR="1"
 fi
 if [[ -z "\${DISTRIBUTION}" ]]; then
     DISTRIBUTION="\$(bash -c 'lsb_release -cs')"
@@ -176,7 +176,7 @@ fi
 GIT_SUITE="\${GIT_BRANCH}"
 GIT_ARCHIVE="\${GIT_BRANCH}"
 GIT_LABEL="\${GIT_LABEL_PREFIX} \${GIT_SUITE}"
-MANIFEST="{\"timestamp\":\"\${TIMESTAMP}\",\"origin\":\"\${GIT_ORIGIN}\",\"label\":\"\${GIT_LABEL}\",\"archive\":\"\${GIT_ARCHIVE}\",\"suite\":\"\${GIT_SUITE}\",\"package-arch\":\"\${PKG_ARCH}\",\"package-version\":\"\${VERSION}-\${REV}\",\"artefacts\":[\${ARTEFACTS}]}"
+MANIFEST="{\"timestamp\":\"\${TIMESTAMP}\",\"origin\":\"\${GIT_ORIGIN}\",\"label\":\"\${GIT_LABEL}\",\"archive\":\"\${GIT_ARCHIVE}\",\"suite\":\"\${GIT_SUITE}\",\"package-arch\":\"\${PKG_ARCH}\",\"package-version\":\"\${VERSION}-\${INCR}\",\"artefacts\":[\${ARTEFACTS}]}"
 MANIFEST="\$(echo "\${MANIFEST}" | jq '.')"
 
 ## prep env
@@ -217,10 +217,7 @@ rm -rfv blib/ Makefile MYMETA.yml MYMETA.json
 /usr/bin/git reset --hard HEAD
 
 ## build dpkg
-/usr/bin/dch --force-distribution -D "\${DISTRIBUTION}" -v "\${VERSION}-\${REV}" "Building git snapshot." || exit 1
-/usr/bin/dch -r "Building git snapshot." || exit 1
-/usr/bin/git archive --format="tar" --prefix="koha-\${VERSION}/" HEAD | gzip > ../koha_\${VERSION}.orig.tar.gz || exit 1
-/usr/bin/pdebuild -- --basetgz "/var/cache/pbuilder/base.tgz" --buildresult "/kohadebs" || exit 1
+/usr/bin/perl ./debian/build-git-snapshot --basetgz="base" --buildresult="/kohadebs" --distribution="\${DISTRIBUTION}" --git-checks="modified" --version="\${VERSION}" --incr="\${INCR}" --noautoversion
 
 ## populate artefacts
 for FILENAME in /kohadebs/*.deb; do
