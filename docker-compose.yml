@@ -1,10 +1,10 @@
 version: '3'
 services:
     build:
-        image: ghcr.io/openfifth/koha-dpkg-docker:${KDD_IMAGE}
+        image: ghcr.io/openfifth/koha-dpkg-docker:${KDD_IMAGE:-unstable}
         privileged: true
         volumes:
-            - ${SYNC_REPO}:/kohaclone
-            - ${DEBS_OUT}:/kohadebs
+            - ${SYNC_REPO:-./}:/kohaclone
+            - ${DEBS_OUT:-../koha_debs_out}:/kohadebs
         env_file:
             - .env

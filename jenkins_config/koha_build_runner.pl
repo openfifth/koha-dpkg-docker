@@ -128,10 +128,11 @@ if ( defined $initial_docker_cleanup && $initial_docker_cleanup ne '' ) {
     );
 }
 print "Cloning koha-dpkg-docker...\n";
+my $kdd_repo   = $ENV{KDD_REPO}   || 'https://github.com/openfifth/koha-dpkg-docker.git';
 my $kdd_branch = $ENV{KDD_BRANCH} || 'unstable';
 chdir($tmp_dir) or die "Cannot chdir to $tmp_dir: $!";
 run_cmd(
-    qq{git clone --branch $kdd_branch --single-branch --depth 1 https://github.com/openfifth/koha-dpkg-docker.git},
+    qq{git clone --branch $kdd_branch --single-branch --depth 1 $kdd_repo},
     { exit_on_error => 1, real_time => $verbose }
 );
 
